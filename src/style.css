@@ -297,6 +297,48 @@ body{
 .slot.filled{ border-style:solid; color:var(--text); cursor:pointer; }
 .slot.filled:hover{ border-color:var(--gold-dim); }
 
+.slot-entry{
+  display:flex; align-items:center; flex-wrap:wrap; gap:12px;
+  margin:12px 0 4px; padding:11px 12px;
+  background:#2a2013; border:1px solid var(--gold-dim);
+  border-radius:8px;
+}
+.slot-entry.is-used{ opacity:.6; }
+.slot-entry-copy{ flex:1; min-width:0; }
+.slot-entry .btn{ flex:0 0 auto; }
+.slot-entry-title{ font-size:14px; font-weight:800; color:var(--gold); letter-spacing:1px; }
+.slot-entry-desc{ margin-top:3px; font-size:11px; line-height:1.4; color:var(--text-dim); }
+
+.slot-machine{
+  margin-top:14px; padding:14px;
+  background:#140f0a; border:1px solid var(--line); border-radius:10px;
+}
+.slot-reels{ display:flex; gap:8px; justify-content:center; }
+.slot-reel{
+  width:72px; height:78px; padding:4px;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(180deg,#3a2c1b,#1c1510);
+  border:1px solid var(--gold-dim); border-radius:8px;
+  color:var(--gold); font-size:15px; font-weight:800; text-align:center;
+}
+.slot-reel.rolling{ animation:reelFlash .16s linear infinite; }
+.slot-reel.landed{ animation:popin .25s cubic-bezier(.2,1.4,.5,1); }
+@keyframes reelFlash{
+  0%,100%{ opacity:.45; transform:translateY(0); }
+  50%{ opacity:1; transform:translateY(-2px); }
+}
+.slot-hint{ min-height:18px; margin-top:9px; text-align:center; font-size:12px; color:var(--gold); }
+.slot-results{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.slot-result-item{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:7px 10px; background:var(--panel);
+  border:1px solid var(--line); border-radius:6px;
+  font-size:13px; animation:popin .25s;
+}
+.slot-result-item .tier{ font-size:11px; color:var(--gold); }
+.slot-result-item.lost{ opacity:.55; }
+.slot-result-item.lost .tier{ color:var(--vermilion); }
+
 .tile-picker{
   display:grid; grid-template-columns:repeat(auto-fill,minmax(40px,1fr));
   gap:6px; margin-top:10px;

@@ -388,6 +388,18 @@
     var html = '<h2>商店</h2>' +
       '<div class="sub">铜钱 ' + fmt(s.money) +
       (info ? '｜本关收入 +' + fmt(info.income) + '，利息 +' + fmt(info.interest) : '') + '</div>' +
+      '<div class="slot-entry' + (s.slotUsedThisRound ? ' is-used' : '') + '">' +
+        '<div class="slot-entry-copy">' +
+          '<div class="slot-entry-title">牌灵老虎机</div>' +
+          '<div class="slot-entry-desc">' +
+            (s.slotUsedThisRound ? '本圈已经摇过，下一圈重置' : '每圈一次，三张全拿，同名自动合并') +
+          '</div>' +
+        '</div>' +
+        '<button class="btn btn--sm btn--primary" id="btnSlotEntry"' +
+          (s.slotUsedThisRound ? ' disabled' : '') + '>' +
+          (s.slotUsedThisRound ? '本圈已使用' : '进入符牌机') +
+        '</button>' +
+      '</div>' +
       '<h3>牌灵 ' + s.jokers.length + '/' + G.JOKER_SLOTS + '</h3>' +
       '<div class="slots" id="ownedJokers"></div>' +
       '<h3>香火 ' + s.consumableIds.length + '/3</h3>' +
@@ -395,15 +407,13 @@
       '<h3>在售</h3><div class="shop-list" id="shopList"></div>' +
       '<div class="modal-actions">' +
       '<button class="btn btn--ghost btn--sm" id="btnReroll">重掷 ' + fmt(s.shop.rerollCost) + '</button>' +
-      '<button class="btn btn--sm btn--primary" id="btnLever"' + (s.slotUsedThisRound ? ' disabled' : '') + '>' +
-      (s.slotUsedThisRound ? '拉杆（本圈已用）' : '拉杆 · 免费摇 3 张') + '</button>' +
       '<button class="btn btn--primary" id="btnNext">下一关</button>' +
       '</div>';
 
     openModal(html, function (root) {
       renderShopBody(root);
-      var lv = root.querySelector('#btnLever');
-      if (lv) lv.addEventListener('click', function () { doSpin(root); });
+      var entry = root.querySelector('#btnSlotEntry');
+      if (entry) entry.addEventListener('click', function () { showSlotMachine(); });
 
       root.querySelector('#btnReroll').addEventListener('click', function () {
         if (!G.rerollShop()) { toast('铜钱不足'); return; }
@@ -423,29 +433,75 @@
     });
   }
 
+  /** 独立的符牌机界面：三转轮 + 摇杆 + 结果 */
+  function showSlotMachine() {
+    var s = G.state();
+    if (!s || !s.shop) { toast('符牌机在商店中使用'); return; }
+    if (s.slotUsedThisRound) { toast('本圈符牌机已经摇过了'); return; }
+
+    var html = '<h2>牌灵老虎机</h2>' +
+      '<div class="sub">每圈一次 · 免费摇 3 张 · 同名自动合并</div>' +
+      '<div class="slot-machine">' +
+        '<div class="slot-reels" id="slotReels">' +
+          '<div class="slot-reel">?</div><div class="slot-reel">?</div><div class="slot-reel">?</div>' +
+        '</div>' +
+        '<div class="slot-hint" id="slotHint">按下摇杆，三张牌灵全部收下</div>' +
+        '<div class="slot-results" id="slotResults"></div>' +
+      '</div>' +
+      '<div class="modal-actions">' +
+        '<button class="btn btn--ghost" id="btnSlotBack">返回商店</button>' +
+        '<button class="btn btn--primary" id="btnSpin">摇一次</button>' +
+      '</div>';
+
+    openModal(html, function (root) {
+      root.querySelector('#btnSlotBack').addEventListener('click', function () {
+        closeModal();
+        showShop(null);
+        render();
+      });
+      root.querySelector('#btnSpin').addEventListener('click', function () {
+        doSpin(root);
+      });
+    });
+  }
+
   /** 拉杆：摇出 3 张牌灵，依次停下，同名合并升级 */
   function doSpin(root) {
     var res = G.spinSlot();
     if (!res) { toast('本圈已经摇过了'); return; }
     var names = res.rolls.map(function (id) { return C.jokerById(id).name; });
+    var btn = root.querySelector('#btnSpin');
+    if (btn) { btn.disabled = true; btn.className = 'btn btn--ghost'; btn.textContent = '本圈已摇过'; }
+    var back = root.querySelector('#btnSlotBack');
+    if (back) { back.className = 'btn btn--primary'; back.textContent = '收下并返回商店'; }
+
+    var reels = root.querySelectorAll('.slot-reel');
+    for (var i = 0; i < reels.length; i++) {
+      (function (el, idx) {
+        el.classList.add('rolling');
+        setTimeout(function () {
+          el.textContent = names[idx];
+          el.classList.remove('rolling');
+          el.classList.add('landed');
+        }, 220 + idx * 160);
+      })(reels[i], i);
+    }
+
     var lines = res.results.map(function (r) {
       var nm = C.jokerById(r.id).name;
-      if (r.lost) return nm + '（牌灵栏已满，没拿到）';
-      if (r.to === 3) return '满贯·' + nm + '  ★★★';
-      if (r.to === 2) return '二重·' + nm + '  ★★';
-      return nm + (r.from > 0 ? '（已升级）' : '');
+      var tier = r.to === 3 ? '满贯' : (r.to === 2 ? '二重' : '普通');
+      if (r.lost) return '<div class="slot-result-item lost"><b>' + nm + '</b><span class="tier">牌灵栏已满，未获得</span></div>';
+      return '<div class="slot-result-item"><b>' + nm + '</b><span class="tier">' + tier +
+        (r.from > 0 ? ' · 已升级' : '') + '</span></div>';
     });
-    var star = res.results.some(function (r) { return r.to === 3; }) ? '★ 满贯！' : (res.results.some(function (r) { return r.to === 2; }) ? '★★ 合并' : '未中');
-    openModal('<h2>拉杆</h2>'
-      + '<div class="sub">转出：' + names.join(' / ') + '</div>'
-      + '<p style="font-size:16px;color:#e0c25c">' + star + '</p>'
-      + '<div class="shop-list">' + lines.map(function (t) { return '<div class="shop-item"><div class="body"><div class="name">' + t + '</div></div></div>'; }).join('') + '</div>'
-      + '<div class="modal-actions"><button class="btn btn--primary" id="btnSpinOk">收下</button></div>',
-    function (r2) {
-      r2.querySelector('#btnSpinOk').addEventListener('click', function () {
-        closeModal(); showShop(null); render();
-      });
-    });
+    var results = root.querySelector('#slotResults');
+    if (results) results.innerHTML = lines.join('');
+
+    var star = res.results.some(function (r) { return r.to === 3; }) ? '满贯！三张同名合并成功' :
+      (res.results.some(function (r) { return r.to === 2; }) ? '二重！同名牌灵已合并' : '三张牌灵已收下');
+    var hint = root.querySelector('#slotHint');
+    if (hint) setTimeout(function () { hint.textContent = star; }, 760);
+    render();
   }
 
   function renderShopBody(root) {

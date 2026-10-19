@@ -223,7 +223,7 @@ async function run() {
 
   /* 用最优选牌跑完整个 8 圈，直到通关或流局 */
   let reachedEnd = false, retries = 0, hands = 0, shopVisits = 0, purchases = 0;
-  let shopShot = false, nextShot = false, lastRetries = 3;
+  let shopShot = false, nextShot = false, lastRetries = 3, slotTested = false;
   let endlessShot = false;
   const playLog = [];
   const trace = [];
@@ -262,6 +262,30 @@ async function run() {
       if (!shopShot) { await shot(page, '07-shop.png'); shopShot = true; }
       if (await buySomething(page)) purchases++;
       if (!nextShot) { await shot(page, '09-shop-after-buy.png'); nextShot = true; }
+      if (!slotTested) {
+        await page.click('#btnSlotEntry');
+        await page.waitForTimeout(150);
+        const reelCount = await page.locator('.slot-reel').count();
+        await page.click('#btnSpin');
+        await page.waitForTimeout(1800);
+        const slotState = await page.evaluate(function () {
+          var s = window.Game.state();
+          return {
+            used: s.slotUsedThisRound,
+            reels: Array.prototype.map.call(document.querySelectorAll('.slot-reel'), function (el) {
+              return el.textContent;
+            }),
+            results: document.querySelectorAll('#slotResults .slot-result-item').length
+          };
+        });
+        if (reelCount !== 3 || !slotState.used || slotState.results < 1) {
+          throw new Error('符牌机未正确摇出结果：' + JSON.stringify(slotState));
+        }
+        await shot(page, '10-slot-machine.png');
+        await page.click('#btnSlotBack');
+        await page.waitForTimeout(150);
+        slotTested = true;
+      }
       await page.click('#btnNext');
       await page.waitForTimeout(160);
       continue;
@@ -342,6 +366,7 @@ async function run() {
   console.log('流局续命次数    :', retries);
   console.log('进店次数        :', shopVisits);
   console.log('购买次数        :', purchases);
+  console.log('符牌机          :', slotTested ? '三转轮、摇杆、合并结果已跑通' : '未测试');
   console.log('通过关卡数      :', final.cleared);
   console.log('结束位置        : 第 ' + final.round + ' 圈 · ' + final.level + ' 关（' + final.phase + '）');
   console.log('最终牌灵        :', final.jokers.length ? final.jokers.join('、') : '无');
@@ -366,6 +391,7 @@ async function run() {
   if (migratedHints !== 6) { console.log('\n旧存档未被正确迁移，hintsLeft=' + migratedHints); process.exit(1); }
   if (tierLabel.indexOf('二重') < 0) { console.log('\n主牌灵栏未显示合并档位'); process.exit(1); }
   if (!shopVisits) { console.log('\n未走到商店，流程未拉通'); process.exit(1); }
+  if (!slotTested) { console.log('\n符牌机界面未跑通'); process.exit(1); }
   if (!reachedEnd) { console.log('\n本局未进入结算，流程未跑完'); process.exit(1); }
   console.log('\n流程已拉通：开局 → 出牌 → 过关 → 商店 → 结算');
 }
