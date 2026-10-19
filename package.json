@@ -1,0 +1,18 @@
+{
+  "name": "hepai",
+  "version": "0.9.1",
+  "private": true,
+  "description": "麻将主题牌组构筑 Roguelike 灰盒原型",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node tools/test/logic-test.js",
+    "test:ui": "node tools/test/ui-test.js",
+    "sim": "node tools/sim/batch.js"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.55.0"
+  }
+}

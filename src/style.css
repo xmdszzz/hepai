@@ -1,0 +1,331 @@
+/* 《和牌》灰盒原型样式 */
+:root{
+  --bg:#14100c;
+  --bg-2:#1d1712;
+  --panel:#241c15;
+  --line:#3d3126;
+  --gold:#c9a227;
+  --gold-dim:#8a6f1c;
+  --ivory:#f3ead8;
+  --text:#e8ddc8;
+  --text-dim:#9c8f79;
+  --jade:#4f9d69;
+  --vermilion:#c0492f;
+  --tile-w: clamp(38px, 11.2vw, 58px);
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; height:100%; }
+body{
+  background: radial-gradient(120% 80% at 50% 0%, #241c14 0%, var(--bg) 60%);
+  color:var(--text);
+  font-family: "PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+
+#app{
+  position:relative;
+  height:100dvh;
+  display:flex;
+  flex-direction:column;
+  max-width:1100px;
+  margin:0 auto;
+  padding: env(safe-area-inset-top) 8px calc(env(safe-area-inset-bottom) + 6px);
+}
+
+/* ---------------- HUD ---------------- */
+.hud{
+  display:flex; align-items:center; gap:8px;
+  padding:8px 4px;
+  border-bottom:1px solid var(--line);
+}
+.hud-cell{ display:flex; flex-direction:column; line-height:1.2; min-width:0; }
+.hud-cell--mid{ margin-left:auto; text-align:right; align-items:flex-end; }
+.hud-cell--right{ margin-left:8px; }
+.hud-k{ font-size:10px; color:var(--text-dim); letter-spacing:1px; }
+.hud-v{ font-size:15px; font-weight:700; color:var(--gold); white-space:nowrap; }
+.icon-btn{
+  background:transparent; border:1px solid var(--line); color:var(--text-dim);
+  width:32px; height:32px; border-radius:6px; font-size:15px; cursor:pointer;
+}
+.icon-btn:hover{ border-color:var(--gold-dim); color:var(--gold); }
+
+/* ---------------- 牌桌面板 ---------------- */
+.board{
+  padding:10px 4px 6px;
+  border-bottom:1px solid var(--line);
+}
+.board-top{ display:flex; align-items:flex-start; gap:10px; }
+.target{ display:flex; flex-direction:column; }
+.target-label{ font-size:10px; letter-spacing:2px; color:var(--text-dim); }
+.target-value{ font-size:26px; font-weight:800; color:var(--gold); font-variant-numeric:tabular-nums; line-height:1.1; }
+
+.chips{ margin-left:auto; display:flex; flex-direction:column; gap:5px; align-items:flex-end; }
+.chip{
+  font-size:11px; padding:3px 8px; border-radius:999px;
+  border:1px solid var(--line); color:var(--text-dim); background:#1b1510;
+  white-space:nowrap;
+}
+.chip--dora{ color:#e0c25c; border-color:var(--gold-dim); }
+.chip--blind{ color:#e08a72; border-color:#8a3b2c; }
+
+/* 宝牌指示牌：用小牌面直接展示，靠近日麻的ドラ表示牌 */
+.chip--dora{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 8px 3px 9px;
+}
+.chip--dora .tile{
+  --tile-w:19px;
+  border-radius:3px; padding:0;
+  box-shadow:0 1px 0 #a37c12;
+}
+.chip--dora .tile .big{ font-size:10px; }
+.chip--dora .tile .small{ font-size:7px; margin-top:0; }
+.chip--dora .tile .corner{ display:none; }
+.chip--dora .tile::after{ display:none; }
+
+.progress{ margin-top:10px; }
+.bar{
+  height:8px; border-radius:999px; background:#160f0a;
+  border:1px solid var(--line); overflow:hidden;
+}
+.bar > i{
+  display:block; height:100%; width:0%;
+  background:linear-gradient(90deg, var(--gold-dim), var(--gold));
+  transition:width .45s cubic-bezier(.2,.9,.3,1);
+}
+.bar > i.done{ background:linear-gradient(90deg,#3f8a55,#6fd08b); }
+.progress-nums{
+  margin-top:5px; font-size:13px; font-variant-numeric:tabular-nums;
+  color:var(--text-dim); display:flex; gap:5px;
+}
+#scoreValue{ color:var(--gold); font-weight:700; }
+
+/* ---------------- 牌灵条 ---------------- */
+.joker-strip{
+  display:flex; gap:6px; padding:8px 4px; min-height:44px;
+  overflow-x:auto; scrollbar-width:none;
+}
+.joker-strip::-webkit-scrollbar{ display:none; }
+.joker{
+  flex:0 0 auto; min-width:56px; padding:5px 8px; border-radius:8px;
+  background:var(--panel); border:1px solid var(--line);
+  font-size:11px; line-height:1.25; text-align:center; color:var(--text);
+}
+.joker small{ display:block; font-size:9px; color:var(--text-dim); }
+.joker.r-white{ border-color:#5a5040; }
+.joker.r-blue{ border-color:#2f5f7a; }
+.joker.r-gold{ border-color:var(--gold-dim); }
+.joker.r-red{ border-color:#8a3b2c; }
+.joker-empty{ font-size:11px; color:#5a5040; align-self:center; padding-left:4px; }
+
+/* ---------------- 手牌 ---------------- */
+.hand-area{
+  flex:1; display:flex; flex-direction:column; justify-content:flex-end;
+  min-height:0; padding-bottom:4px; gap:6px;
+}
+.preview{
+  min-height:20px; text-align:center; font-size:12px; color:var(--text-dim);
+  padding:0 4px;
+}
+.preview b{ color:var(--gold); }
+.preview .tip{ color:#7f8f7a; }
+
+.hand{
+  display:flex; flex-wrap:wrap; justify-content:center;
+  align-content:flex-end; gap:5px; padding:14px 2px 6px;
+  min-height:0;
+}
+
+/* ---------------- 牌 ---------------- */
+.tile{
+  position:relative;
+  width:var(--tile-w); aspect-ratio:3/4.1;
+  background:linear-gradient(180deg,#fbf6e8 0%,#eadfc6 100%);
+  border:1px solid #a89769;
+  border-radius:6px;
+  box-shadow:0 2px 0 #8f7f57, 0 3px 7px rgba(0,0,0,.45);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer; user-select:none;
+  transition:transform .12s ease, box-shadow .12s ease;
+  padding:2px;
+}
+.tile .big{ font-size:calc(var(--tile-w) * .48); font-weight:800; line-height:1; }
+.tile .small{ font-size:calc(var(--tile-w) * .23); opacity:.72; margin-top:1px; }
+.tile .corner{ position:absolute; top:2px; left:4px; font-size:calc(var(--tile-w)*.2); opacity:.5; }
+.tile.s-W .big, .tile.s-W .small, .tile.s-W .corner{ color:#8a2b2b; }
+.tile.s-T .big, .tile.s-T .small, .tile.s-T .corner{ color:#1f5f8b; }
+.tile.s-B .big, .tile.s-B .small, .tile.s-B .corner{ color:#2f6b3a; }
+.tile.s-Z .big, .tile.s-Z .small, .tile.s-Z .corner{ color:#6b3f8a; }
+.tile.sel{
+  transform:translateY(-12px);
+  box-shadow:0 0 0 3px var(--gold), 0 8px 16px rgba(0,0,0,.55);
+}
+
+/* 宝牌高亮：借鉴日麻，宝牌与普通牌一眼可分 */
+.tile.is-dora{
+  background:linear-gradient(180deg,#fff7de 0%,#f1d693 100%);
+  border-color:#d9a621;
+  box-shadow:0 0 0 2px rgba(217,166,33,.55), 0 2px 0 #a37c12, 0 3px 10px rgba(217,166,33,.45);
+}
+.tile.is-dora::after{
+  content:'宝';
+  position:absolute; top:1px; right:3px;
+  font-size:calc(var(--tile-w) * .22);
+  font-weight:800; color:#b8860b;
+  text-shadow:0 0 5px rgba(255,225,140,.95);
+}
+.tile.is-dora.sel{
+  box-shadow:0 0 0 3px #fff0a8, 0 0 0 6px rgba(217,166,33,.65), 0 8px 16px rgba(0,0,0,.55);
+}
+.tile.dim{ opacity:.42; }
+.tile.mini{ --tile-w:30px; cursor:default; }
+
+/* ---------------- 底部操作 ---------------- */
+.controls{
+  display:flex; align-items:center; gap:10px;
+  padding:8px 4px 2px; border-top:1px solid var(--line);
+}
+.counters{ display:flex; flex-direction:column; gap:2px; font-size:11px; color:var(--text-dim); }
+.counter b{ color:var(--text); font-size:13px; }
+.mini-btn{
+  margin-top:3px; align-self:flex-start;
+  background:#2a2013; border:1px solid var(--gold-dim); color:var(--gold);
+  border-radius:6px; font-size:11px; padding:4px 9px; cursor:pointer;
+}
+.mini-btn:disabled{ opacity:.35; cursor:not-allowed; }
+.chip--tenpai{ color:#ff9a6b; border-color:#8a3b2c; }
+.actions{ margin-left:auto; display:flex; gap:8px; }
+.btn{
+  border-radius:8px; border:1px solid var(--line); background:var(--panel);
+  color:var(--text); font-size:15px; font-weight:700;
+  padding:12px 14px; min-width:76px; cursor:pointer;
+  transition:transform .1s, filter .15s;
+}
+.btn:active{ transform:scale(.97); }
+.btn:disabled{ opacity:.35; cursor:not-allowed; }
+.btn--primary{ background:linear-gradient(180deg,#d9b23a,#a8841b); color:#221a08; border-color:#e5c766; }
+.btn--ghost{ background:#1b1510; }
+.btn--hint{
+  background:#2a2013; border-color:var(--gold-dim); color:var(--gold);
+  min-width:62px; padding:12px 9px; font-size:13px;
+}
+.btn--hint small{ display:block; font-size:10px; opacity:.75; font-weight:400; }
+.btn--sm{ font-size:12px; padding:8px 12px; min-width:auto; }
+
+/* ---------------- 计分特效层 ---------------- */
+.fx{
+  position:absolute; inset:0; pointer-events:none;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(10,7,4,.82); z-index:40;
+}
+.fx.on{ display:flex; }
+.fx-inner{ width:min(560px,92%); display:flex; flex-direction:column; align-items:center; gap:14px; }
+.fx-cards{ display:flex; gap:4px; justify-content:center; }
+.fx-type{ font-size:22px; font-weight:800; color:var(--gold); letter-spacing:2px; }
+.fx-row{
+  display:flex; align-items:baseline; justify-content:center; gap:10px;
+  font-variant-numeric:tabular-nums; width:100%;
+}
+.fx-label{ font-size:12px; color:var(--text-dim); letter-spacing:1px; }
+.fx-num{ font-size:34px; font-weight:800; }
+.fx-num.pts{ color:#e8ddc8; }
+.fx-num.fan{ color:#e0a83c; }
+.fx-num.total{ font-size:46px; color:var(--gold); }
+.fx-list{ display:flex; flex-direction:column; gap:4px; min-height:20px; width:100%; align-items:center; }
+.fx-item{
+  font-size:13px; color:#e0c25c;
+  animation:popin .28s cubic-bezier(.2,1.4,.5,1);
+}
+.fx-item.m{ color:#ff9a6b; }
+@keyframes popin{ from{ transform:scale(.6) translateY(6px); opacity:0; } to{ transform:none; opacity:1; } }
+.fx-mult{ font-size:24px; color:var(--text-dim); }
+.shake{ animation:shake .35s; }
+@keyframes shake{
+  0%,100%{ transform:translate(0,0); }
+  25%{ transform:translate(-5px,2px); }
+  50%{ transform:translate(4px,-3px); }
+  75%{ transform:translate(-3px,-2px); }
+}
+
+/* ---------------- 弹窗 ---------------- */
+.modal-root{
+  position:absolute; inset:0; z-index:60;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(8,5,3,.88); padding:14px;
+  overflow-y:auto;
+}
+.modal-root[hidden]{ display:none; }
+.modal{
+  width:min(620px,100%); background:var(--bg-2);
+  border:1px solid var(--line); border-radius:12px;
+  padding:18px; max-height:92dvh; overflow-y:auto;
+}
+.modal h2{ margin:0 0 4px; font-size:19px; color:var(--gold); letter-spacing:1px; }
+.modal h3{ margin:14px 0 8px; font-size:13px; color:var(--text-dim); letter-spacing:2px; font-weight:600; }
+.modal p{ margin:6px 0; font-size:13px; line-height:1.55; color:var(--text); }
+.modal .sub{ font-size:12px; color:var(--text-dim); }
+.modal-actions{ margin-top:18px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+
+.info-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:10px; }
+.info-cell{
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:8px; padding:8px 10px;
+}
+.info-cell .k{ font-size:10px; color:var(--text-dim); letter-spacing:1px; }
+.info-cell .v{ font-size:16px; font-weight:700; color:var(--gold); }
+
+.shop-list{ display:flex; flex-direction:column; gap:8px; }
+.shop-item{
+  display:flex; align-items:center; gap:10px;
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:8px; padding:10px;
+}
+.shop-item.sold{ opacity:.4; }
+.shop-item .body{ flex:1; min-width:0; }
+.shop-item .name{ font-size:14px; font-weight:700; }
+.shop-item .desc{ font-size:11px; color:var(--text-dim); margin-top:2px; line-height:1.4; }
+.shop-item .rarity{ font-size:10px; padding:1px 6px; border-radius:999px; border:1px solid currentColor; }
+.r-white{ color:#b8ac93; } .r-blue{ color:#5aa7cd; } .r-gold{ color:#e0bd4a; } .r-red{ color:#e06a4a; }
+
+.slots{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+.slot{
+  font-size:11px; padding:5px 9px; border-radius:6px;
+  border:1px dashed var(--line); color:var(--text-dim); background:#1b1510;
+}
+.slot.filled{ border-style:solid; color:var(--text); cursor:pointer; }
+.slot.filled:hover{ border-color:var(--gold-dim); }
+
+.tile-picker{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(40px,1fr));
+  gap:6px; margin-top:10px;
+}
+.picker-cell{
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  cursor:pointer; padding:4px; border-radius:8px; border:1px solid transparent;
+}
+.picker-cell:hover{ border-color:var(--gold-dim); background:#1b1510; }
+.picker-cell .cnt{ font-size:10px; color:var(--text-dim); }
+.picker-cell.full{ opacity:.4; cursor:not-allowed; }
+
+.toast{
+  position:absolute; left:50%; bottom:96px; transform:translateX(-50%);
+  background:#2a2013; border:1px solid var(--gold-dim); color:var(--gold);
+  padding:8px 16px; border-radius:999px; font-size:13px; z-index:70;
+  animation:popin .25s; pointer-events:none;
+}
+
+/* ---------------- 桌面 ---------------- */
+@media (min-width:820px){
+  :root{ --tile-w:56px; }
+  #app{ padding-left:0; padding-right:0; }
+  .hand{ gap:8px; }
+  .modal{ padding:24px; }
+  .info-grid{ grid-template-columns:repeat(4,1fr); }
+}
+@media (max-height:620px){
+  .board{ padding-top:6px; padding-bottom:4px; }
+  .target-value{ font-size:21px; }
+  .joker-strip{ min-height:38px; padding:5px 4px; }
+}
