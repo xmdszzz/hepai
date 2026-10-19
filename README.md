@@ -2,6 +2,8 @@
 
 麻将主题 · 牌组构筑 Roguelike · H5 游戏
 
+![test](https://github.com/xmdszzz/hepai/actions/workflows/test.yml/badge.svg)
+
 2~6 张灵活出牌 × 14 档牌型 × 番数倍率构筑。用麻将的组牌结构和番种体系，重做《小丑牌》的「点数 × 番数」爽感循环。
 
 ## 当前状态
